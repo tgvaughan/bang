@@ -1,0 +1,49 @@
+This is an example Bang! input file.
+To see what it evaluates to, run "bang test.input -o -".
+
+(Beware that this will produce errors unless you have all of the
+interpreters invoked by the input file installed on your system.)
+
+Now, onwards!
+
+We can include Chicken scheme:
+!!!csi -bq
+(define (factorial n)
+    (if (<= n 0)
+        1
+        (* n (factorial (- n 1)))))
+
+(display (factorial 5))
+!!!
+
+Then perhaps some python:
+!!!python3
+for l in range(10):
+    print("Hello, World {}!".format(l))
+!!!
+
+What now, maybe some R?
+!!!FACT=R --slave -f
+
+cat(factorial(5))
+!!!
+
+Or some bash!
+!!!bash
+echo $PATH
+!!!
+
+How about some inline evaluation? The square root of
+2 to 5 decimal places is !!!dc -e "5 k 2 v p"!!!
+
+(There is no need for the block to start at the beginning
+of a line nor for it to end at the end of a line.)
+
+Earlier result for factorial 5: FACT.
+
+Finally, here is some guile scheme:
+
+!!!guile -s
+(display (reverse '(cow pig sheep)))!!!
+
+That's pretty much it!
