@@ -60,9 +60,7 @@ def eval_codeblock(s):
         dest_var = header[:idx].strip()
         header = header[(idx+1):].strip()
 
-    if rest == None:
-        result = subprocess.run(header, capture_output=True, text=True, shell=True)
-    else:
+    if rest:
         fname = None
         with tempfile.NamedTemporaryFile('w', delete=False) as fh:
             fh.write(rest)
@@ -70,8 +68,10 @@ def eval_codeblock(s):
 
         result = subprocess.run(header + " " + fname, capture_output=True, text=True, shell=True)
         os.remove(fname)
+    else:
+        result = subprocess.run(header, capture_output=True, text=True, shell=True)
 
-    if result.stderr:
+    if result.returncode != 0:
         sys.stderr.write("Error evaluating block '{}'. Error output:\n".format(header))
         sys.stderr.write(result.stderr)
 
@@ -120,7 +120,7 @@ while True:
         raise Exception("Unterminated block found.")
 
     result, dest_var = eval_codeblock(substitute_vars(ifile.rest()[:blockEnd], defs))
-    if dest_var != None:
+    if dest_var:
         defs[dest_var] = result
     args.out.write(result)
     
