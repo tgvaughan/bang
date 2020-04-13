@@ -1,0 +1,133 @@
+#!/usr/bin/env python3
+#
+#     Bang! Adding Turing Completeness to config files since 2020.
+#     Copyright (C) 2020  Tim Vaughan
+#
+#     This program is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     This program is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+import argparse
+import tempfile
+import os
+import subprocess
+import sys
+
+BLOCK_START = "!!!"
+BLOCK_END = "!!!"
+
+
+class IndexedFile:
+    def __init__(self, f):
+        self.filestring = f.read()
+        self.index = 0
+
+    def rest(self):
+        return self.filestring[self.index:]
+
+    def increment_index(self,inc):
+        self.index += inc
+
+
+def substitute_vars(s, defs):
+    for k,v in defs.items():
+        s = s.replace(k, v)
+
+    return s
+
+
+def eval_codeblock(s):
+    if "\n" in s:
+        idx = s.find("\n")
+        header = s[0:idx]
+        rest = s[idx+1:]
+    else:
+        header = s
+        rest = None
+
+    dest_var = None
+    if "=" in header:
+        idx = header.find("=")
+        dest_var = header[:idx].strip()
+        header = header[(idx+1):].strip()
+
+    if rest == None:
+        result = subprocess.run(header, capture_output=True, text=True, shell=True)
+    else:
+        fname = None
+        with tempfile.NamedTemporaryFile('w', delete=False) as fh:
+            fh.write(rest)
+            fname = fh.name
+
+        result = subprocess.run(header + " " + fname, capture_output=True, text=True, shell=True)
+        os.remove(fname)
+
+    if result.stderr:
+        sys.stderr.write("Error evaluating block '{}'. Error output:\n".format(header))
+        sys.stderr.write(result.stderr)
+
+    return result.stdout, dest_var
+
+
+## Main ##
+
+parser = argparse.ArgumentParser(description="""
+Bang! Adding Turing Completeness to your config files since 2020.
+    """)
+parser.add_argument("file", help="name of file to process", type=argparse.FileType("r"))
+parser.add_argument("-o","--out", help="output file", type=argparse.FileType("w"),
+                    default=tempfile.NamedTemporaryFile('w', delete=False))
+parser.add_argument("-d","--define", help="define variable using syntax k=v", type=str,
+                    action="append", default=[], metavar="def", dest="defs")
+args = parser.parse_args()
+
+# Extract variable definitions
+
+defs = {}
+for dstr in args.defs:
+    if "=" not in dstr:
+        raise Exception("Invalid variable definition " + dstr)
+    idx = dstr.find("=")
+    defs[dstr[:idx]] = dstr[(idx+1):]
+    
+
+# Find and evaluate all code blocks in file
+
+ifile = IndexedFile(args.file)
+
+while True:
+
+    blockStart = ifile.rest().find(BLOCK_START)
+    if blockStart  < 0:
+        args.out.write(substitute_vars(ifile.rest(), defs))
+        break
+
+    args.out.write(substitute_vars(ifile.rest()[:blockStart], defs))
+    ifile.increment_index(blockStart+len(BLOCK_START))
+
+    blockEnd = ifile.rest().find(BLOCK_END)
+
+    if blockEnd < 0:
+        raise Exception("Unterminated block found.")
+
+    result, dest_var = eval_codeblock(substitute_vars(ifile.rest()[:blockEnd], defs))
+    if dest_var != None:
+        defs[dest_var] = result
+    args.out.write(result)
+    
+    ifile.increment_index(blockEnd+len(BLOCK_END))
+
+
+# Bang evaluates to name of output file, unless stdout
+
+if args.out != sys.stdout:
+    sys.stdout.write(args.out.name)
