@@ -53,7 +53,7 @@ The usage instructions are as follows:
 
 By default, the generated output is written to a temporary file, the
 name of which is written to standard output.  This permits the use of
-a backtick evaluation of bang wherever a filename is expected.
+a backtick evaluation of Bang! wherever a filename is expected.
 
 (Of course, this means that the result of the evaluation will remain
 in your system's temporary storage until this storage is cleaned.)
@@ -78,9 +78,12 @@ command is executed with the name of that file as its final argument.
 The code block is then replaced with whatever that command writes to
 standard output.
 
-If the command is prefixed by `VAR=` where VAR is some string, the
-result of the evaluation will also be saved to a variable with that
-name.
+There is no requirement that the block start at the beginning of a line,
+nor that it end at the end of a line.
+
+If the command is prefixed by `VAR=` where VAR is some (far too
+liberal) sequence of characters, the result of the evaluation will
+also be saved to a variable with that name.
 
 Here is an example of bash code block:
 
