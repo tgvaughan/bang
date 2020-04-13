@@ -24,5 +24,112 @@ following simple command:
 Additionally, you can include variable substitution using the
 following syntax:
 
-    $ prog `bang -d var1="Some value" config.txt`
+    $ prog `bang -d var="Some value" config.txt`
 
+
+Installation
+------------
+
+To install Bang!, copy it into a directory in your $PATH and ensure
+that the execute bit is set.
+
+
+Usage
+-----
+
+The usage instructions are as follows:
+
+    usage: bang [-h] [-o OUT] [-d def] file
+
+    Bang! Adding Turing Completeness to your config files since 2020.
+
+    positional arguments:
+    file                  name of file to process
+
+    optional arguments:
+    -h, --help            show this help message and exit
+    -o OUT, --out OUT     output file
+    -d def, --define def  define variable using syntax k=v
+
+By default, the generated output is written to a temporary file, the
+name of which is written to standard output.  This permits the use of
+a backtick evaluation of bang wherever a filename is expected.
+
+(Of course, this means that the result of the evaluation will remain
+in your system's temporary storage until this storage is cleaned.)
+
+Alternatively, you can directly specify an output file using `--out`.
+The output file name `-` directs Bang! to write directly to standard
+out: this is the only instance in which the file name is not printed.
+
+
+## Code blocks
+
+Code blocks are specified using the following notation in the input file:
+
+    !!![VAR=]COMMAND
+    BODY (line 1)
+    BODY (line 2)
+    ...!!!
+    
+Here COMMAND is any command that takes a single file as argument.  The
+body of the code block is written to a temporary file, then the
+command is executed with the name of that file as its final argument.
+The code block is then replaced with whatever that command writes to
+standard output.
+
+If the command is prefixed by `VAR=` where VAR is some string, the
+result of the evaluation will also be saved to a variable with that
+name.
+
+Here is an example of bash code block:
+
+    !!!bash
+    for i in `seq 1 5`; do
+        echo "Hi $i"
+    done
+    !!!
+
+And here is an example of an R code block:
+
+    !!!R --slave -f
+    cat(lgamma(20))!!!
+
+Here's an example of the same R code block that also saves the result
+to a variable:
+
+    !!!VAR = guile -s
+    (display (reverse '(cow sheep pig)))!!!
+
+Any occurrence of "VAR" from this point on in the input file will be replaced
+by `(pig sheep cow)`.
+
+Finally, for including the output of commands which do not require an input
+file, you can skip the body entirely.  For instance, `!!!uptime!!!` works.
+So does `!!!dc -e "5 k 2 v p"!!!`.
+
+
+## Variables
+
+Bang!'s variable system is so simplistic that you might argue that it's misleadingly
+named.  Basically a search and replace is performed on every fragment of the input --
+both code (pre-evaluation) and non-code -- so that **any** occurrence of the "variable"
+name will be replaced with the corresponding value.
+
+I've done things this way to give you the flexibility to avoid any syntactical conflicts
+with exiting variable naming schemes.  (E.g. if Bang! enforced "$var" notation, suddenly
+we'd need to escape the "$" in shell variables.)  This way it's up to **you** to avoid
+namespace collisions.
+
+(This is inspired by the flexibility M4 allows with respect to macro naming.)
+
+
+License
+-------
+
+Although it seems ridiculous to explicitly license a 80-line python script,
+here goes.
+
+Bang! is free as in freedom, and is released under the conditions of the 
+version 3 of the GNU General Public License.  A copy of this license is
+found in this directory in the file named COPYING.
