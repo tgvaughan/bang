@@ -33,6 +33,9 @@ Installation
 To install Bang!, copy it into a directory in your $PATH and ensure
 that the execute bit is set.
 
+Ensure you have Python 3 installed, and that `python3` is aliased
+to it.
+
 
 Usage
 -----
