@@ -26,6 +26,9 @@ following syntax:
 
     $ prog `bang -d var="Some value" config.txt`
 
+Thus, Bang! allows us to programmatically construct parts of config
+files, and to use command-line options with programs that only take
+a config file.
 
 Installation
 ------------
